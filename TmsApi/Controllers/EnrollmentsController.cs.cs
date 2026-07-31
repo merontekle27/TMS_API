@@ -4,12 +4,12 @@ namespace TmsApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class EnrollmentController : ControllerBase
+public class EnrollmentsController : ControllerBase
 {
     // This controller handles HTTP requests related to enrollments. It uses the IEnrollmentService to perform operations on enrollment records.
     private readonly IEnrollmentService _service;
 
-    public EnrollmentController(IEnrollmentService service)
+    public EnrollmentsController(IEnrollmentService service)
     {
         _service = service;
         
@@ -21,10 +21,17 @@ public class EnrollmentController : ControllerBase
 // 2. Calls EnrollAsync().
 // 3. Returns the created enrollment.
     [HttpPost]
-public async Task<IActionResult> Enroll(string studentId, string courseCode)
+[HttpPost]
+public async Task<IActionResult> Create([FromBody] EnrollmentRequest request)
 {
-    var result = await _service.EnrollAsync(studentId, courseCode);
-    return Ok(result);
+    var enrollment = await _service.EnrollAsync(
+        request.StudentId,
+        request.CourseCode);
+
+    return CreatedAtAction(
+        nameof(GetById),
+        new { id = enrollment.Id },
+        enrollment);
 }
 [HttpGet]
 public async Task<IActionResult> GetAll()
