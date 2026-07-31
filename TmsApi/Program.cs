@@ -13,8 +13,13 @@ builder.Services
         options => { });
 
 builder.Services.AddAuthorization();
-
-builder.Services.AddSingleton<IEnrollmentService, EnrollmentService>();
+//A singleton lives for the entire app
+//builder.Services.AddSingleton<IEnrollmentService, EnrollmentService>();
+// A scoped service lives once per HTTP request, which is the correct 
+// lifetime for services that will eventually work with a database(like EnrollmentService)
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+builder.Services.Configure<EnrollmentOptions>(
+    builder.Configuration.GetSection("Enrollment"));
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
