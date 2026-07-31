@@ -20,8 +20,10 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.Configure<EnrollmentOptions>(
     builder.Configuration.GetSection("Enrollment"));
+    builder.Services.AddProblemDetails();
 var app = builder.Build();
 
+app.UseExceptionHandler();
 // Configure the HTTP request pipeline.
 app.UseHttpsRedirection();
 

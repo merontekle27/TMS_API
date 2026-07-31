@@ -39,4 +39,30 @@ public async Task<IActionResult> GetAll()
     var enrollments = await _service.GetAllAsync();
     return Ok(enrollments);
 }
+
+[HttpGet("{id}")]
+public async Task<IActionResult> GetById(string id)
+{
+    var enrollment = await _service.GetByIdAsync(id);
+
+    if (enrollment == null)
+    {
+        return NotFound();
+    }
+
+    return Ok(enrollment);
+}
+
+[HttpDelete("{id}")]
+public async Task<IActionResult> Delete(string id)
+{
+    var deleted = await _service.DeleteAsync(id);
+
+    if (!deleted)
+    {
+        return NotFound();
+    }
+
+    return NoContent();
+}
 }
