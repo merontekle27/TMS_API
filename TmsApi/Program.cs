@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
-
+using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -21,8 +21,14 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.Configure<EnrollmentOptions>(
     builder.Configuration.GetSection("Enrollment"));
     builder.Services.AddProblemDetails();
+    builder.Services.AddOpenApi();
 var app = builder.Build();
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
 
+    app.MapScalarApiReference();
+}
 app.UseExceptionHandler();
 // Configure the HTTP request pipeline.
 app.UseHttpsRedirection();
@@ -35,4 +41,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.MapGet("/api/error", () =>
+{
+    throw new TmsDatabaseException(
+        "Simulated database failure for ProblemDetails testing");
+});
 app.Run();
