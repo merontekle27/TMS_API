@@ -14,6 +14,7 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddSingleton<IEnrollmentService, EnrollmentService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
