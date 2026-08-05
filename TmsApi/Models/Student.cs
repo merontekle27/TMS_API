@@ -6,5 +6,5 @@ public class Student
     public string Name { get; set; } = string.Empty;
     public decimal GPA { get; set; }
     public bool IsActive{get; set;}
-    public ICollection<Enrollment> Enrollmetns {get ; set; } = new List<Enrollment>();
+    public ICollection<Enrollment> Enrollments {get ; set; } = new List<Enrollment>();
     }

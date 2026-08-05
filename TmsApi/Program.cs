@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Scalar.AspNetCore;
+using Microsoft.EntityFrameworkCore;
+using TmsApi.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -22,6 +24,7 @@ builder.Services.Configure<EnrollmentOptions>(
     builder.Configuration.GetSection("Enrollment"));
     builder.Services.AddProblemDetails();
     builder.Services.AddOpenApi();
+    builder.Services.AddDbContext
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
