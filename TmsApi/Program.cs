@@ -24,7 +24,9 @@ builder.Services.Configure<EnrollmentOptions>(
     builder.Configuration.GetSection("Enrollment"));
     builder.Services.AddProblemDetails();
     builder.Services.AddOpenApi();
-    builder.Services.AddDbContext
+    builder.Services.AddDbContext<TmsDbContext>(options =>
+     options.UseNqsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
