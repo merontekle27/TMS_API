@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Scalar.AspNetCore;
 using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 using TmsApi.Data;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,7 +26,7 @@ builder.Services.Configure<EnrollmentOptions>(
     builder.Services.AddProblemDetails();
     builder.Services.AddOpenApi();
     builder.Services.AddDbContext<TmsDbContext>(options =>
-     options.UseNqsql(
+     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 var app = builder.Build();
 if (app.Environment.IsDevelopment())

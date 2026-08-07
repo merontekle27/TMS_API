@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TmsApi.Models;
 
 namespace TmsApi.Data;
 
