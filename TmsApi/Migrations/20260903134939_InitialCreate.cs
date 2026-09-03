@@ -20,7 +20,7 @@ namespace TmsApi.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Code = table.Column<string>(type: "text", nullable: false),
                     Title = table.Column<string>(type: "text", nullable: false),
-                    Capacity = table.Column<string>(type: "text", nullable: true)
+                    Capacity = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
