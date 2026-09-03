@@ -24,4 +24,19 @@ public class TestController : ControllerBase
 
         return Ok(new { count });
     }
+    [HttpGet("top-students")]
+public async Task<IActionResult> GetTopStudents()
+{
+    var students = await _context.Students
+        .Where(s => s.IsActive)
+        .OrderByDescending(s => s.GPA)
+        .Select(s => new
+        {
+            s.Name,
+            s.GPA
+        })
+        .ToListAsync();
+
+    return Ok(students);
+}
 }
