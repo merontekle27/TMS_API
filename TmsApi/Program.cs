@@ -6,11 +6,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL;
 using TmsApi.Data;
 using TmsApi.Services;
 using TmsApi.Dtos;
+using TmsApi.Filters;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 //this is where we register services that will be used by the application, such as controllers, authentication, and authorization services.
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<AuditLogFilter>();
+});
 
 builder.Services
     .AddAuthentication("TrainingScheme")
@@ -101,4 +105,12 @@ using (var scope = app.Services.CreateScope())
         context.SaveChanges();
     }
 }
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<TmsDbContext>();
+    await DataSeeder.SeedAsync(context);
+}
+
 app.Run();
