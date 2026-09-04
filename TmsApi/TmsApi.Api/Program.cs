@@ -9,6 +9,7 @@ using TmsApi.Application.Interfaces;
 using TmsApi.Domain.Entities;
 using TmsApi.Infrastructure.Persistence;
 using TmsApi.Infrastructure.Services;
+using MediatR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,9 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
+
+// Register MediatR handlers in Application
+builder.Services.AddMediatR(typeof(TmsApi.Application.Class1).Assembly);
 
 builder.Services.AddDbContext<TmsDbContext>(options =>
     options.UseNpgsql(
