@@ -36,11 +36,20 @@ builder.Services.AddOpenApi();
 // Register MediatR handlers in Application
 builder.Services.AddMediatR(typeof(TmsApi.Application.Class1).Assembly);
 
-builder.Services.AddDbContext<TmsDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("TmsDatabase"))
-        .LogTo(Console.WriteLine, LogLevel.Information)
-        .EnableSensitiveDataLogging());
+var tmsConn = builder.Configuration.GetConnectionString("TmsDatabase");
+if (!string.IsNullOrWhiteSpace(tmsConn))
+{
+    builder.Services.AddDbContext<TmsDbContext>(options =>
+        options.UseNpgsql(tmsConn)
+            .LogTo(Console.WriteLine, LogLevel.Information)
+            .EnableSensitiveDataLogging());
+}
+else
+{
+    // No PostgreSQL connection string configured — fall back to an in-memory DB
+    builder.Services.AddDbContext<TmsDbContext>(options =>
+        options.UseInMemoryDatabase("TmsInMemory"));
+}
 
 var app = builder.Build();
 
@@ -66,7 +75,18 @@ app.MapGet("/api/error", () =>
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<TmsDbContext>();
-    context.Database.Migrate();
+
+    if (!string.IsNullOrWhiteSpace(tmsConn))
+    {
+        try
+        {
+            context.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Database migration failed: {ex.Message}");
+        }
+    }
 
     if (!context.Students.Any())
     {
@@ -85,11 +105,18 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Seed 25 deterministic courses in Development
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() && !string.IsNullOrWhiteSpace(tmsConn))
 {
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<TmsDbContext>();
-    await DataSeeder.SeedAsync(context);
+    try
+    {
+        await DataSeeder.SeedAsync(context);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Data seeding skipped/failed: {ex.Message}");
+    }
 }
 
 app.Run();
