@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using TmsApi.Models;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
 using TmsApi.Data;
+using TmsApi.Services;
+using TmsApi.Dtos;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -21,6 +23,7 @@ builder.Services.AddAuthorization();
 //builder.Services.AddSingleton<IEnrollmentService, EnrollmentService>();
 // A scoped service lives once per HTTP request, which is the correct 
 // lifetime for services that will eventually work with a database(like EnrollmentService)
+builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.Configure<EnrollmentOptions>(
     builder.Configuration.GetSection("Enrollment"));
@@ -39,6 +42,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 app.UseExceptionHandler();
+app.UseStatusCodePages();
 // Configure the HTTP request pipeline.
 app.UseHttpsRedirection();
 
@@ -76,9 +80,9 @@ using (var scope = app.Services.CreateScope())
 
         var courses = new List<Course>
         {
-            new() { Code = "CS-101", Title = "Introduction to Computer Science", Capacity = 30 },
-            new() { Code = "CS-201", Title = "Data Structures and Algorithms", Capacity = 25 },
-            new() { Code = "MAT-101", Title = "Calculus I", Capacity = 40 }
+            new() { Code = "CS-101", Title = "Introduction to Computer Science", MaxCapacity = 30 },
+            new() { Code = "CS-201", Title = "Data Structures and Algorithms", MaxCapacity = 25 },
+            new() { Code = "MAT-101", Title = "Calculus I", MaxCapacity = 40 }
         };
 
         context.Courses.AddRange(courses);
