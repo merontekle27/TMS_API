@@ -10,12 +10,19 @@ using TmsApi.Domain.Entities;
 using TmsApi.Infrastructure.Persistence;
 using TmsApi.Infrastructure.Services;
 using MediatR;
+using Asp.Versioning;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<AuditLogFilter>();
+});
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
 });
 
 builder.Services

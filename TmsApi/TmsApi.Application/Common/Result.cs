@@ -1,30 +1,36 @@
 namespace TmsApi.Application.Common;
 
-public readonly record struct Result<TSuccess, TError>
+public readonly record struct Result<TValue, TError>
 {
-    public bool IsSuccess { get; init; }
-    public TSuccess? Success { get; init; }
-    public TError? Error { get; init; }
+    private readonly TValue? _value;
+    private readonly TError? _error;
+    public bool IsSuccess { get; }
 
-    public static Result<TSuccess, TError> Ok(TSuccess value) => new() { IsSuccess = true, Success = value };
-    public static Result<TSuccess, TError> Fail(TError error) => new() { IsSuccess = false, Error = error };
-}
+    private Result(TValue value)
+    {
+        _value = value;
+        _error = default;
+        IsSuccess = true;
+    }
 
-public readonly record struct Result<TSuccess>
-{
-    public bool IsSuccess { get; init; }
-    public TSuccess? Success { get; init; }
-    public string? Error { get; init; }
+    private Result(TError error)
+    {
+        _value = default;
+        _error = error;
+        IsSuccess = false;
+    }
 
-    public static Result<TSuccess> Ok(TSuccess value) => new() { IsSuccess = true, Success = value };
-    public static Result<TSuccess> Fail(string error) => new() { IsSuccess = false, Error = error };
-}
+    public static Result<TValue, TError> Success(TValue value) => new(value);
+    public static Result<TValue, TError> Failure(TError error) => new(error);
 
-public readonly record struct Result
-{
-    public bool IsSuccess { get; init; }
-    public string? Error { get; init; }
+    public TValue Value => IsSuccess
+        ? _value!
+        : throw new InvalidOperationException("Result is failure; call Match instead of Value.");
 
-    public static Result Ok() => new() { IsSuccess = true };
-    public static Result Fail(string error) => new() { IsSuccess = false, Error = error };
+    public TError Error => !IsSuccess
+        ? _error!
+        : throw new InvalidOperationException("Result is success; call Match instead of Error.");
+
+    public TOut Match<TOut>(Func<TValue, TOut> onSuccess, Func<TError, TOut> onFailure) =>
+        IsSuccess ? onSuccess(_value!) : onFailure(_error!);
 }
