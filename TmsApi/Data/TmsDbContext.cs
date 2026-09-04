@@ -14,4 +14,6 @@ public class TmsDbContext : DbContext //our database context inherits all the  f
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Course> Courses => Set<Course>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
+    public DbSet<Assessment> Assessments => Set<Assessment>();
+    public DbSet<Certificate> Certificates => Set<Certificate>();
 }
