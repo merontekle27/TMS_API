@@ -26,6 +26,21 @@ public class CourseService(TmsDbContext context, ILogger<CourseService> logger) 
             .Include(c => c.Enrollments)
             .FirstOrDefaultAsync(c => c.Code == code, ct);
 
+    public async Task<IReadOnlyList<Course>> GetAllAsync(CancellationToken ct) =>
+        await context.Courses
+            .Include(c => c.Enrollments)
+            .OrderBy(c => c.Title)
+            .ToListAsync(ct);
+
+    public async Task<Course?> UpdateTitleAsync(int id, string title, CancellationToken ct)
+    {
+        var course = await context.Courses.FirstOrDefaultAsync(c => c.Id == id, ct);
+        if (course is null) return null;
+        course.Title = title;
+        await context.SaveChangesAsync(ct);
+        return course;
+    }
+
     public async Task<CourseResponseDto> CreateAsync(CreateCourseRequest request, CancellationToken ct)
     {
         var course = new Course

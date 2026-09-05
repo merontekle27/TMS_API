@@ -1,15 +1,20 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TmsApi.Infrastructure.Persistence;
+using Microsoft.AspNetCore.RateLimiting;
+using TmsApi.Application.DTOs;
+using TmsApi.Application.Interfaces;
 
 namespace TmsApi.Api.Controllers.V2;
+
+public record UpdateCourseRequest(string Title);
 
 [ApiController]
 [Route("api/v{version:apiVersion}/courses")]
 [Route("api/courses")]
 [ApiVersion("2.0")]
-public class CoursesController(TmsDbContext context) : ControllerBase
+public class CoursesController(
+    ICachedCourseService cachedCourseService,
+    ICourseService courseService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetCourses(
@@ -20,23 +25,13 @@ public class CoursesController(TmsDbContext context) : ControllerBase
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 50);
 
-        var baseQuery = context.Courses.AsNoTracking();
+        var allCourses = await cachedCourseService.GetAllCoursesAsync(ct);
+        var totalCount = allCourses.Count;
 
-        var totalCount = await baseQuery.CountAsync(ct);
-
-        var rows = await baseQuery
-            .OrderBy(c => c.Title)
+        var rows = allCourses
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => new
-            {
-                c.Id,
-                c.Title,
-                c.Code,
-                c.MaxCapacity,
-                EnrollmentCount = c.Enrollments.Count
-            })
-            .ToListAsync(ct);
+            .ToList();
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         var hasNext = page < totalPages;
@@ -66,5 +61,35 @@ public class CoursesController(TmsDbContext context) : ControllerBase
                 enroll = "/api/v2/enrollments"
             }
         });
+    }
+
+    [HttpGet("search")]
+    [EnableRateLimiting("search")]
+    public async Task<IActionResult> SearchCourses(
+        [FromQuery] string? term, CancellationToken ct)
+    {
+        var allCourses = await cachedCourseService.GetAllCoursesAsync(ct);
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            allCourses = allCourses
+                .Where(c => c.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                            c.Code.Contains(term, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        return Ok(allCourses);
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateCourse(
+        int id, [FromBody] UpdateCourseRequest request, CancellationToken ct)
+    {
+        var updated = await courseService.UpdateTitleAsync(id, request.Title, ct);
+        if (updated is null)
+        {
+            return NotFound();
+        }
+
+        await cachedCourseService.InvalidateCourseCacheAsync(ct);
+        return Ok(updated);
     }
 }
