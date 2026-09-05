@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using System.Threading.RateLimiting;
 using Asp.Versioning;
 using FluentValidation;
@@ -11,16 +12,22 @@ using Scalar.AspNetCore;
 using TmsApi.Api;
 using TmsApi.Api.ExceptionHandlers;
 using TmsApi.Api.Filters;
+using TmsApi.Api.Hubs;
 using TmsApi.Api.Middleware;
+using TmsApi.Api.Notifications;
 using TmsApi.Api.RateLimiting;
 using TmsApi.Application.Behaviors;
 using TmsApi.Application.DTOs;
 using TmsApi.Application.Enrollments.Commands;
 using TmsApi.Application.Exceptions;
 using TmsApi.Application.Interfaces;
+using TmsApi.Application.Notifications;
+using TmsApi.Application.Transcripts;
 using TmsApi.Domain.Entities;
 using TmsApi.Infrastructure.Persistence;
 using TmsApi.Infrastructure.Services;
+using TmsApi.Infrastructure.Transcripts;
+using TmsApi.Infrastructure.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -163,6 +170,19 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+// Register SignalR and Real-Time Notifications
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<ITranscriptNotificationService, SignalRTranscriptNotificationService>();
+
+// Register Bounded Channel and Status Store for Background Transcripts
+builder.Services.AddSingleton(Channel.CreateBounded<TranscriptRequest>(
+    new BoundedChannelOptions(100)
+    {
+        FullMode = BoundedChannelFullMode.Wait
+    }));
+builder.Services.AddSingleton<ITranscriptStatusStore, InMemoryTranscriptStatusStore>();
+builder.Services.AddHostedService<TranscriptWorker>();
+
 // Register application & infrastructure services (scoped per HTTP request)
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ICachedCourseService, CachedCourseService>();
@@ -210,6 +230,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<V1DeprecationMiddleware>();
 app.MapControllers();
+app.MapHub<TmsHub>("/hubs/tms");
 
 app.MapGet("/api/error", () =>
 {
