@@ -1,16 +1,41 @@
 using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using TmsApi.Api.Hubs;
 using TmsApi.Application.Enrollments.Commands;
 using TmsApi.Application.Enrollments.Queries;
+using TmsApi.Application.Hubs;
 
 namespace TmsApi.Api.Controllers;
 
 [ApiController]
 [Route("api/v{version:apiVersion}/enrollments")]
+[Route("api/enrollments")]
 [ApiVersion("2.0")]
-public class EnrollmentsController(IMediator mediator) : ControllerBase
+public class EnrollmentsController(
+    IMediator mediator,
+    IHubContext<TmsHub, ITmsHubClient> hubContext) : ControllerBase
 {
+    [HttpGet]
+    public IActionResult GetAll()
+    {
+        var sampleEnrollments = new[]
+        {
+            new { id = "1", studentId = 1, studentName = "Liya Kebede", courseId = 101, courseName = "Advanced Java Services", status = "Pending", enrolledAt = DateTimeOffset.UtcNow.ToString("O") },
+            new { id = "2", studentId = 2, studentName = "Dawit Alemu", courseId = 102, courseName = "Angular UI Lab", status = "Approved", enrolledAt = DateTimeOffset.UtcNow.ToString("O") },
+            new { id = "3", studentId = 3, studentName = "Sara Tesfaye", courseId = 103, courseName = "Database Design", status = "Pending", enrolledAt = DateTimeOffset.UtcNow.ToString("O") },
+            new { id = "4", studentId = 4, studentName = "Abebe Bikila", courseId = 104, courseName = "API Security Workshop", status = "Pending", enrolledAt = DateTimeOffset.UtcNow.ToString("O") }
+        };
+        return Ok(sampleEnrollments);
+    }
+
+    [HttpPost("{id}/approve")]
+    public async Task<IActionResult> Approve(string id, CancellationToken ct)
+    {
+        await hubContext.Clients.All.ReceiveEnrollmentStatusUpdated(id, "Approved");
+        return NoContent();
+    }
     [HttpPost]
     public async Task<IActionResult> Enroll(
         EnrollStudentCommand command, CancellationToken ct)
