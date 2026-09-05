@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Identity;
 using TmsApi.Infrastructure.Identity;
 using System.Threading.Channels;
 using System.Threading.RateLimiting;
@@ -364,3 +367,4 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
