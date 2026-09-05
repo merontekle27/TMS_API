@@ -1,6 +1,9 @@
-using Asp.Versioning;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TmsApi.Application.DTOs;
+using TmsApi.Domain.Entities;
 using TmsApi.Infrastructure.Persistence;
 
 namespace TmsApi.Api.Controllers.V1;
@@ -9,7 +12,7 @@ namespace TmsApi.Api.Controllers.V1;
 [Route("api/v{version:apiVersion}/courses")]
 [Route("api/courses")]
 [ApiVersion("1.0")]
-public class CoursesController(TmsDbContext context) : ControllerBase
+public class CoursesController(TmsDbContext context, IAuthorizationService authorizationService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetCourses(
@@ -34,6 +37,7 @@ public class CoursesController(TmsDbContext context) : ControllerBase
                 c.Code,
                 c.Title,
                 c.MaxCapacity,
+                c.InstructorId,
                 EnrollmentCount = c.Enrollments.Count
             })
             .ToListAsync(ct);
@@ -50,6 +54,24 @@ public class CoursesController(TmsDbContext context) : ControllerBase
             hasNext = page < totalPages,
             hasPrevious = page > 1
         });
+    }
+
+    [Authorize(Roles = "Instructor,Admin")]
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateCourse(int id, [FromBody] UpdateCourseDto dto)
+    {
+        var course = await context.Courses.FindAsync(id);
+        if (course == null) return NotFound();
+
+        var authResult = await authorizationService.AuthorizeAsync(User, course, "CanEditCourse");
+        if (!authResult.Succeeded)
+        {
+            return Forbid(); // 403 Forbidden when caller doesn't own the resource
+        }
+
+        course.Title = dto.Title;
+        await context.SaveChangesAsync();
+        return NoContent();
     }
 
     [HttpDelete("{id:int}")]
