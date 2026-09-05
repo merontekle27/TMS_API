@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +17,9 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
                 "Validation failed",
                 "One or more fields are invalid. See errors for details.",
                 (IDictionary<string, string[]>?)ve.Errors
-                    .GroupBy(e => e.PropertyName)
+                    .GroupBy(e => string.IsNullOrEmpty(e.PropertyName)
+                        ? e.PropertyName
+                        : JsonNamingPolicy.CamelCase.ConvertName(e.PropertyName))
                     .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())),
             _ => (
                 StatusCodes.Status500InternalServerError,
@@ -40,7 +43,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
 
         httpContext.Response.StatusCode = status;
         httpContext.Response.ContentType = "application/problem+json";
-        await httpContext.Response.WriteAsJsonAsync(problem, ct);
+        await httpContext.Response.WriteAsJsonAsync(problem, options: (JsonSerializerOptions?)null, contentType: "application/problem+json", cancellationToken: ct);
         return true;
     }
 }

@@ -56,6 +56,7 @@ builder.Services.AddApiVersioning(options =>
         new UrlSegmentApiVersionReader(),
         new HeaderApiVersionReader("X-Api-Version"));
 })
+.AddMvc()
 .AddApiExplorer(options =>
 {
     options.GroupNameFormat = "'v'VVV";
@@ -152,7 +153,7 @@ using (var scope = app.Services.CreateScope())
         context.SaveChanges();
     }
 
-    if (app.Environment.IsDevelopment())
+    if (!context.Courses.Any())
     {
         try
         {
