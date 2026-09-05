@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using Asp.Versioning;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -54,6 +55,12 @@ builder.Services.AddCors(options =>
     });
 });
 
+
+// Register Antiforgery with header name matching Angular's convention
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+});
 
 // Register MediatR and FluentValidation validators
 builder.Services.AddMediatR(cfg =>
@@ -248,6 +255,24 @@ app.UseCors("TmsClient");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Issue readable XSRF-TOKEN cookie for double-submit CSRF protection on authenticated requests
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true || context.Request.Cookies.ContainsKey("tms_auth"))
+    {
+        var antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>();
+        var tokens = antiforgery.GetAndStoreTokens(context);
+        context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions
+        {
+            HttpOnly = false, // MUST be false so Angular JavaScript can read it!
+            Secure = !builder.Environment.IsDevelopment(),
+            SameSite = SameSiteMode.Strict
+        });
+    }
+    await next(context);
+});
+
 app.UseMiddleware<V1DeprecationMiddleware>();
 app.MapControllers();
 app.MapHub<TmsHub>("/hubs/tms");
