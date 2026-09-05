@@ -36,6 +36,25 @@ builder.Services.AddControllers(options =>
     options.Filters.Add<AuditLogFilter>();
 });
 
+// Load allowed origins from appsettings.Development.json
+var allowedOrigins = builder.Configuration
+    .GetSection("AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:4200"];
+
+// Register the CORS policy in the Dependency Injection container
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("TmsClient", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials() // Vital for HttpOnly auth cookies in Session 2
+            .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+    });
+});
+
+
 // Register MediatR and FluentValidation validators
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(EnrollStudentHandler).Assembly));
@@ -225,6 +244,7 @@ if (app.Environment.IsDevelopment())
 app.UseStatusCodePages();
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseCors("TmsClient");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -244,6 +264,24 @@ using (var scope = app.Services.CreateScope())
 
     if (!string.IsNullOrWhiteSpace(tmsConn))
     {
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'Courses' AND column_name = 'Capacity'
+                    ) THEN
+                        ALTER TABLE ""Courses"" RENAME COLUMN ""Capacity"" TO ""MaxCapacity"";
+                    END IF;
+                END $$;");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Database schema sync note: {ex.Message}");
+        }
+
         try
         {
             context.Database.Migrate();
